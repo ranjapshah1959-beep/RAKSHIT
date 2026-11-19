@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JARVIS - Mobile AI Assistant</title>
+  <style>
+    :root {
+      --bg: #050b14;
+      --panel: #0b1628;
+      --neon: #00d9ff;
+      --neon-soft: rgba(0, 217, 255, 0.22);
+      --text: #e6f7ff;
+      --muted: #7aa2b8;
+      --danger: #ff4d6d;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #0c2240 0%, var(--bg) 70%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 14px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--neon-soft);
+      padding-bottom: 10px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--neon);
+    }
+
+    .pulse-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--neon);
+      box-shadow: 0 0 12px var(--neon);
+    }
+
+    .settings-box {
+      background: var(--panel);
+      border: 1px solid var(--neon-soft);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    input, select, button {
+      border-radius: 8px;
+      border: 1px solid var(--neon-soft);
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+
+    input, select {
+      background: #060e1a;
+      color: var(--text);
+      flex: 1;
+      min-width: 140px;
+    }
+
+    button {
+      background: rgba(0, 217, 255, 0.14);
+      color: var(--neon);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .chat-box {
+      flex: 1;
+      background: var(--panel);
+      border: 1px solid var(--neon-soft);
+      border-radius: 14px;
+      padding: 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 48vh;
+    }
+
+    .msg {
+      padding: 10px 12px;
+      border-radius: 10px;
+      line-height: 1.45;
+      max-width: 88%;
+      word-wrap: break-word;
+    }
+
+    .user {
+      align-self: flex-end;
+      background: #13315c;
+      border: 1px solid rgba(0, 217, 255, 0.35);
+    }
+
+    .jarvis {
+      align-self: flex-start;
+      background: #071222;
+      border-left: 3px solid var(--neon);
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 8px;
+    }
+
+    #micBtn {
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      font-size: 28px;
+      background: radial-gradient(circle, rgba(0, 217, 255, 0.35), rgba(0, 217, 255, 0.08));
+      border: 2px solid var(--neon);
+      box-shadow: 0 0 22px var(--neon-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #micBtn.listening {
+      border-color: var(--danger);
+      background: rgba(255, 77, 109, 0.25);
+      box-shadow: 0 0 24px rgba(255, 77, 109, 0.6);
+    }
+
+    .status {
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .text-input-row {
+      width: 100%;
+      display: flex;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="pulse-dot"></span>
+      <span>J.A.R.V.I.S.</span>
+    </div>
+    <select id="langSelect" aria-label="Language">
+      <option value="mr-IN" selected>मराठी (mr-IN)</option>
+      <option value="hi-IN">हिन्दी (hi-IN)</option>
+      <option value="en-IN">English (en-IN)</option>
+    </select>
+  </header>
+
+  <div class="settings-box">
+    <div class="row">
+      <input id="apiKeyInput" type="password" placeholder="Gemini API Key इथे टाक (फक्त तुझ्या फोनमध्ये सेव्ह होईल)" />
+      <button id="saveKeyBtn" type="button">Save Key</button>
+    </div>
+    <div class="status" id="keyStatus">API Key सेव्ह केलेली नाही.</div>
+  </div>
+
+  <div class="chat-box" id="chatBox">
+    <div class="msg jarvis">नमस्कार! मी जार्विस. माईक दाबून बोल किंवा खाली मेसेज टाक.</div>
+  </div>
+
+  <div class="controls">
+    <button id="micBtn" type="button" title="बोलण्यासाठी दाब">🎤</button>
+    <div class="status" id="statusText">तयार आहे</div>
+
+    <div class="text-input-row">
+      <input id="textInput" type="text" placeholder="किंवा इथे लिहून पाठव..." />
+      <button id="sendBtn" type="button">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const apiKeyInput = document.getElementById("apiKeyInput");
+    const saveKeyBtn = document.getElementById("saveKeyBtn");
+    const keyStatus = document.getElementById("keyStatus");
+    const chatBox = document.getElementById("chatBox");
+    const micBtn = document.getElementById("micBtn");
+    const statusText = document.getElementById("statusText");
+    const langSelect = document.getElementById("langSelect");
+    const textInput = document.getElementById("textInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    const STORAGE_KEY = "jarvis_gemini_api_key";
+
+    // सेव्ह केलेली Key लोड करणे
+    const savedKey = localStorage.getItem(STORAGE_KEY);
+    if (savedKey) {
+      apiKeyInput.value = savedKey;
+      keyStatus.textContent = "API Key या फोनमध्ये सेव्ह आहे.";
+    }
+
+    saveKeyBtn.addEventListener("click", () => {
+      const val = apiKeyInput.value.trim();
+      if (!val) {
+        keyStatus.textContent = "कृपया वैध API Key टाक.";
+        return;
+      }
+      localStorage.setItem(STORAGE_KEY, val);
+      keyStatus.textContent = "Key सुरक्षितपणे सेव्ह झाली!";
+    });
+
+    function addMessage(text, sender) {
+      const div = document.createElement("div");
+      div.className = `msg ${sender}`;
+      div.textContent = text;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function speak(text) {
+      if (!("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = langSelect.value;
+      utter.rate = 1.0;
+      window.speechSynthesis.speak(utter);
+    }
+
+    async function askJarvis(prompt) {
+      const key = (localStorage.getItem(STORAGE_KEY) || apiKeyInput.value).trim();
+      if (!key) {
+        const msg = "आधी वरती Gemini API Key टाक आणि Save Key दाब.";
+        addMessage(msg, "jarvis");
+        speak(msg);
+        return;
+      }
+
+      addMessage(prompt, "user");
+      statusText.textContent = "जार्विस विचार करत आहे...";
+
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`;
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: "तुम्ही JARVIS आहात. उत्तरे लहान, स्पष्ट, उपयुक्त आणि ज्या भाषेत प्रश्न विचारला आहे त्याच भाषेत द्या." }]
+            },
+            contents: [{ role: "user", parts: [{ text: prompt }] }]
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error?.message || "API Error");
+        }
+
+        const reply =
+          data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
+          "मला उत्तर मिळाले नाही.";
+
+        addMessage(reply, "jarvis");
+        speak(reply);
+        statusText.textContent = "तयार आहे";
+      } catch (err) {
+        const errMsg = "त्रुटी आली: " + err.message;
+        addMessage(errMsg, "jarvis");
+        statusText.textContent = "एरर";
+      }
+    }
+  
